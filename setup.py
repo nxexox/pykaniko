@@ -1,7 +1,7 @@
 import os
 import kaniko
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
@@ -11,7 +11,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
 setup(
     name=kaniko.__title__,
     version=kaniko.__version__,
-    packages=kaniko(
+    packages=find_packages(
         exclude=('tests', '*tests', '*tests*')
     ),  # We throw away from the assembly too much.
     include_package_data=True,

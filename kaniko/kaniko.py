@@ -1,12 +1,8 @@
-import json
 import os
+import json
 import subprocess
-import logging
 from enum import Enum
-from typing import List, Optional, AnyStr
-
-
-logger = logging.getLogger(__name__)
+from typing import List, Optional, AnyStr, Callable
 
 
 class KanikoSnapshotMode(Enum):
@@ -70,7 +66,7 @@ class Kaniko(object):
     This flag allows you to pass in ARG values at build time, similarly to Docker. You can set it multiple times for
     multiple arguments.
     """
-    build_args: List[str]
+    build_args: List[str] = []
 
     """
     Set this flag as --cache=true to opt in to caching with kaniko.
@@ -136,14 +132,14 @@ class Kaniko(object):
     It is supposed to be used for testing purposes only and should not be used in production!
     You can set it multiple times for multiple registries.
     """
-    insecure_registry: List[str] = None
+    insecure_registry: List[str] = []
 
     """
     Set this flag to skip TLS cerificate validation when accessing a registry.
     It is supposed to be used for testing purposes only and should not be used in production!
     You can set it multiple times for multiple registries.
     """
-    skip_tls_verify_registry: List[str] = None
+    skip_tls_verify_registry: List[str] = []
 
     """
     Set this flag to clean the filesystem at the end of the build.
@@ -219,23 +215,11 @@ class Kaniko(object):
     kaniko_path: str = '/kaniko'
 
     def __init__(self):
-        self.build_args = list()
-        self.insecure_registry = list()
-        self.skip_tls_verify_registry = list()
         self._configure_attribute_names = tuple([
             key
             for key in self.__class__.__dict__.keys()
             if not key.startswith('_')
         ])
-
-    @property
-    def _path_to_executor(self) -> str:
-        """
-        :return: Path to executor. self.kaniko_path + /executor
-        :rtype: str
-
-        """
-        return os.path.join(self.kaniko_path, 'executor')
 
     def build(self, **kwargs) -> List[str]:
         """
@@ -247,8 +231,6 @@ class Kaniko(object):
         :raise KanikoBuildException: if kaniko failed
         """
         self.configure(**kwargs)
-        if not self._exist_executor:
-            logger.warning(f'Executor not found on path `{self._path_to_executor}`.')
         self._write_config()
 
         res = subprocess.Popen(self.shell_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -266,7 +248,7 @@ class Kaniko(object):
         Sets parameters from kwargs
         """
         for key, value in kwargs.items():
-            if key not in self._configure_attribute_names:
+            if key not in self._configure_attribute_names or self._is_callable(key):
                 continue
 
             setattr(self, key, value)
@@ -277,20 +259,17 @@ class Kaniko(object):
         :return: shell command arguments to invoke subprocess.Popen
         :rtype: List[str]
         """
-        command = [self._path_to_executor]
+        executor_path = self.kaniko_path + '/executor'
+
+        command = [executor_path]
         for handler in self._shell_part_handlers:
             getattr(self, handler)(command)
 
         return command
 
-    @property
-    def _exist_executor(self) -> bool:
-        """
-        :return: Exists executor?
-        :rtype: bool
-
-        """
-        return os.path.exists(self._path_to_executor)
+    def _is_callable(self, attribute_name: str):
+        attribute = getattr(self, attribute_name, None)
+        return isinstance(attribute, Callable)
 
     def _make_config(self):
         return {
