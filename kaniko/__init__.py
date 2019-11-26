@@ -11,7 +11,7 @@ __ALL__ = [
     Kaniko,
 ]
 
-VERSION = (1, 0, 0)
+VERSION = (1, 0, 1)
 
 __title__ = 'pykaniko'
 __author__ = 'Maksunov Artem'
