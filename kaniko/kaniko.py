@@ -69,6 +69,11 @@ class Kaniko(object):
     build_args: List[str] = []
 
     """
+    Set context dir
+    """
+    context: Optional[str] = None
+
+    """
     Set this flag as --cache=true to opt in to caching with kaniko.
     """
     cache: bool = False
@@ -298,6 +303,10 @@ class Kaniko(object):
     def _get_shell_part_build_args(self, command: List[str]):
         for arg in self.build_args:
             command.append(f'--build-arg={arg}')
+
+    def _get_shell_part_context(self, command: List[str]):
+        if self.context:
+            command.append(f'--context={self.context}')
 
     def _get_shell_part_cache(self, command: List[str]):
         if self.cache:
