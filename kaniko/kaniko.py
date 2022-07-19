@@ -313,7 +313,11 @@ class Kaniko(object):
 
     def _get_shell_part_destination(self, command: List[str]):
         if self.destination:
-            command.append(f'--destination={self.destination}')
+            if isinstance(self.destination, list):
+                for _destination in self.destination:
+                    command.append(f'--destination={_destination}')
+            else:
+                command.append(f'--destination={self.destination}')
 
     def _get_shell_part_digest_file(self, command: List[str]):
         if self.digest_file:
